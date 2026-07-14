@@ -1,0 +1,25 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Secrets
+.env
+
+# Generated images/captures (not source, can be large)
+captures/
+
+# Claude Code local-only settings
+.claude/settings.local.json
+
+# Arduino build artifacts (if arduino-cli/IDE outputs build dirs locally)
+arduino/**/build/
+*.hex
+*.elf
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
