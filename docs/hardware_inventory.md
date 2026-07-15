@@ -214,12 +214,15 @@ Important:
 
 ## Distance Sensors
 
-### TF-Luna LiDAR (primary rangefinder, ordered 2026-07-12, arriving 2026-07-13)
+### TF-Luna LiDAR (primary rangefinder, ordered 2026-07-12, arrived and integrated 2026-07-15)
 - Single-point ToF LiDAR, range 0.2-8m, 1cm resolution, FOV 2 degrees
 - Default interface is UART (I2C possible but not used) -- this is the reason it was chosen
 - 5V supply, ships with ready-to-use JST-1.25mm-6Pin cables (male-male and male-to-Dupont), no soldering required
 - Blind zone below 0.2m -- confirm actual sensor-to-target distances in the mechanical layout stay above this
 - Chosen specifically because it does NOT share the I2C bus with the PCA9685 servo driver, avoiding the reliability problems hit with VL53L1X (see below)
+- Wiring (confirmed working): pin1=5V, pin4=GND, **pin3 (TXD) -> Arduino D2**, **pin2 (RXD) -> Arduino D3** -- note TXD/RXD must cross to the Arduino's RX/TX, matching `SoftwareSerial(2, 3)` in code (Arduino's one hardware UART is reserved for USB/PC comms)
+- SoftwareSerial at the sensor's default 115200 baud drops/corrupts roughly half of frames -- not a wiring problem, a known SoftwareSerial limitation. Rather than risk an uncertain raw baud-rate-reconfigure command to the sensor, the firmware (`readDistanceCm()` in `arduino/aim_control/aim_control.ino`) just discards checksum failures and retries until a valid frame arrives or a 200ms timeout elapses -- tested stable (zero timeouts over ~120 samples during standalone testing)
+- Integrated into `arduino/aim_control/aim_control.ino` behind the `"D"` serial command (replies `DIST:<cm>` or `DIST:TIMEOUT`); `aim_verify_loop.py` calls it once per run, only after the VLM confirms the laser is on-target
 
 ### VL53L1X ToF sensors (deprioritized -- see note)
 - Quantity: 4

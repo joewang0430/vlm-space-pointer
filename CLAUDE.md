@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Repository Status
-Early implementation stage. Python venv is at `.venv/` (create with `python -m venv .venv`; install deps with `.venv/Scripts/pip.exe install -r requirements.txt`). Standalone test scripts exist at the repo root (`camera_test.py`, `serial_test.py`, `vlm_test.py`) plus Arduino sketches under `arduino/` (`blink_test/`, `serial_test/`), each runnable directly (e.g. `.venv/Scripts/python.exe camera_test.py`) — there is no unified backend/app yet, per the **Current Development Rule** of testing one module at a time. Update this section with real run commands as more modules are added.
+Core pipeline complete and demonstrated end-to-end (2026-07-15): `aim_verify_loop.py` runs the full VLM-guided aim -> verify -> correct -> measure closed loop against a live target description passed as a CLI argument, e.g. `.venv/Scripts/python.exe aim_verify_loop.py the Pepsi cola bottle`. It captures an initial frame, asks the VLM for a rough target pixel location, converts that to a servo pulse via `pixel_to_angle.py`, fires the laser, then repeatedly re-captures and asks the VLM a qualitative left/right/on-target question, nudging the servo with an adaptive step size until it confirms on-target -- at which point it triggers a TF-Luna distance reading over the same Arduino connection and prints the result. Firmware is `arduino/aim_control/aim_control.ino` (single sketch handling servo pulse, laser on/off, and `"D"`-triggered distance read). Python venv is at `.venv/` (create with `python -m venv .venv`; install deps with `.venv/Scripts/pip.exe install -r requirements.txt`). Older standalone test scripts (`camera_test.py`, `serial_test.py`, `vlm_test.py`, etc.) remain at the repo root for isolated module testing; see the **Current Development Rule** section for the full list.
 
 ## Project Name
 VLM-Guided Physical Pointer System
@@ -51,11 +51,11 @@ The first goal is to verify the basic software and hardware pipeline:
 1. Capture an image from the webcam. ✅ done
 2. Save the image. ✅ done
 3. Send the image to a VLM and get back target pixel coordinates (using a coordinate-grid overlay for accuracy). ✅ done
-4. Convert a target coordinate into a physical command (pixel → rotation angle). ⏳ next
-5. Send command from Python to Arduino over serial. ✅ done (basic on/off command test; angle command still needed)
-6. Make one hardware module move safely (pan rotation with the laser). ✅ done — servo (PCA9685) and laser (MOSFET) each independently verified moving/switching under Arduino control; not yet mechanically mounted together
+4. Convert a target coordinate into a physical command (pixel → rotation angle). ✅ done — empirical pixel↔pulse calibration in `pixel_to_angle.py`, human-verified against real photos
+5. Send command from Python to Arduino over serial. ✅ done — unified protocol (pulse number / `"1"` / `"0"` / `"D"`) in `arduino/aim_control/aim_control.ino`
+6. Make one hardware module move safely (pan rotation with the laser). ✅ done — servo, laser, and TF-Luna mounted co-aligned and verified moving/firing/reading together
 
-Once (4)–(6) work: close the loop — re-capture after aiming, send to the VLM to verify the laser dot is on the correct object, correct the angle if not, then trigger the rangefinder to capture distance at the verified angle.
+Closing the loop — re-capture after aiming, send to the VLM to verify the laser dot is on the correct object, correct the angle if not, then trigger the rangefinder to capture distance at the verified angle — ✅ done, implemented in `aim_verify_loop.py`, demonstrated end-to-end 2026-07-15 (Pepsi cola bottle target: converged on-target, measured 196cm). Known limitation, worth documenting rather than chasing further: the VLM's on-target judgment isn't perfectly reliable on small/narrow targets or when the laser dot lands on a busy/dark label (low visual contrast) -- the loop's adaptive step-size correction and a retry-on-invisible-dot check mitigate but don't eliminate this.
 
 ## Software Architecture
 - Python backend:
@@ -103,9 +103,14 @@ Before writing code, clarify which module is being tested. Test order (per `docs
 6. (deferred) H-bridge + linear actuator test, short pulses only
 7. laser test — ✅ done (`arduino/laser_test/`), verified via the MOSFET module with the real laser
 8. rangefinder test — ✅ TF-Luna is the plan (arriving 2026-07-13); VL53L1X was tried first and works standalone but is deprioritized (see Current Hardware)
-9. mechanical integration (mount laser + rangefinder co-aligned on the servo, keep an emergency power cutoff accessible) — ⏳ next
-10. VLM loop — VLM coordinate test (photo → GPT-4o → pixel coordinates, `vlm_test.py`, with a coordinate-grid overlay) already done standalone. Full aim → verify → measure closed loop still pending mechanical integration.
+9. mechanical integration (mount laser + rangefinder co-aligned on the servo, keep an emergency power cutoff accessible) — ✅ done
+10. VLM loop — ✅ done. Full aim → verify → correct → measure closed loop implemented in `aim_verify_loop.py`, demonstrated end-to-end 2026-07-15.
 
-Additional software-only steps not tied to a specific hardware arrival: pixel-to-angle calibration math.
+Additional software-only steps not tied to a specific hardware arrival: pixel-to-angle calibration math — ✅ done, empirical fit in `pixel_to_angle.py` (see docstring for methodology and valid range).
 
-Known-good test scripts to reuse rather than rewrite: `camera_test.py`, `serial_test.py`, `vlm_test.py`, `combined_test.py` (servo sweep + laser toggle together) at the repo root; `arduino/{blink_test,serial_test,laser_test,servo_test,combined_test,rangefinder_test,aim_and_measure_test}/`.
+Known-good test scripts to reuse rather than rewrite:
+- `aim_verify_loop.py` — the main closed-loop script (aim -> verify -> correct -> measure), takes the target description as CLI args
+- `pixel_to_angle.py` — empirical pixel↔servo-pulse calibration
+- `verify_capture.py` — careful frame capture (flushes stale buffer) used to gather calibration data
+- `camera_test.py`, `serial_test.py`, `vlm_test.py`, `combined_test.py` (servo sweep + laser toggle together) — standalone module tests, repo root
+- `arduino/aim_control/` — current firmware (servo + laser + TF-Luna distance, unified serial protocol); `arduino/{blink_test,serial_test,laser_test,servo_test,combined_test,rangefinder_test,aim_and_measure_test,tfluna_test}/` — earlier standalone module tests, kept for reference
