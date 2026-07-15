@@ -1,13 +1,14 @@
 """Converts a VLM-reported target pixel coordinate into a PCA9685 pulse
 value for the pan servo.
 
-Empirically calibrated 2026-07-12: with the camera and laser in a fixed
-relative position, pointed at a wall several meters away, moved the
-servo through 12 pulse values and had the user directly read off (by
-eye, not automated detection -- classical image processing proved
-unreliable earlier) where the laser dot landed in a labeled pixel grid.
-Fit a line through the 12 (pixel_x, pulse) points: max residual ~2.6
-pulse units, R^2 = 0.998.
+Recalibrated 2026-07-15 after the camera+laser assembly was detached and
+physically remounted, which invalidated the prior 2026-07-12 fit. Same
+methodology: moved the servo through 11 pulse values (270-360, step 10;
+260 fell outside the frame) and had the user directly read off (by eye,
+not automated detection -- classical image processing proved unreliable
+earlier) where the laser dot landed in a labeled pixel grid. Fit a line
+through the 10 in-frame (pixel_x, pulse) points: max residual ~2.3 pulse
+units.
 
 Distance caveat: this calibration mixes the camera's own (distance-
 independent) angular resolution with the parallax between the laser's
@@ -17,13 +18,13 @@ should be treated as approximate for close-up (tabletop-range) targets
 -- the aim->verify->correct VLM loop is what's responsible for closing
 that residual gap, not this formula.
 
-Valid roughly over pulse range [260, 355] / pixel_x range [30, 605],
+Valid roughly over pulse range [270, 360] / pixel_x range [70, 618],
 the window where the laser dot fell inside the camera's current field
 of view. Outside that the fit is extrapolation.
 """
 
-PULSE_PER_PIXEL = -0.17072
-PULSE_AT_PIXEL_ZERO = 362.74
+PULSE_PER_PIXEL = -0.17041
+PULSE_AT_PIXEL_ZERO = 372.97
 
 # Sanity clamp -- keep any single command inside the mechanically safe
 # range even if a wildly out-of-window pixel_x is passed in.

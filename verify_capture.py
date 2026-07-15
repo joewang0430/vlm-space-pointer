@@ -9,7 +9,7 @@ import time
 import cv2
 import serial
 
-PULSES_TO_TEST = [265, 355]
+PULSES_TO_TEST = [260, 270, 280, 290, 300, 310, 320, 330, 340, 350, 360]
 
 
 def get_fresh_frame(cap, flush_count=5):
