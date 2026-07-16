@@ -1,0 +1,65 @@
+=== bear ===
+direction curve cells (delta: correct/directional):
+    5: 0/1 (0%)
+    8: 7/10 (70%)
+   12: 20/24 (83%)
+   18: 17/18 (94%)
+   25: 22/22 (100%)
+fit: alpha=11.69 beta=5.97 lapse=0.008
+JND (75% correct): 11.0 pulses
+JND bootstrap median 11.0, 95% CI [6.8, 14.0]
+hit-report curve (delta: on_target/total):
+    1: 24/24 (100%)
+    2: 24/24 (100%)
+    3: 24/24 (100%)
+    5: 23/24 (96%)
+    8: 14/24 (58%)
+   12: 0/24 (0%)
+   18: 0/24 (0%)
+   25: 0/24 (0%)
+
+=== folder ===
+direction curve cells (delta: correct/directional):
+    1: 1/2 (50%)
+    2: 3/5 (60%)
+    3: 4/7 (57%)
+    5: 9/13 (69%)
+    8: 12/13 (92%)
+   12: 24/24 (100%)
+   18: 24/24 (100%)
+   25: 24/24 (100%)
+fit: alpha=6.36 beta=2.72 lapse=0.000
+JND (75% correct): 5.6 pulses
+JND bootstrap median 4.9, 95% CI [0.2, 7.6]
+hit-report curve (delta: on_target/total):
+    1: 22/24 (92%)
+    2: 19/24 (79%)
+    3: 11/24 (46%)
+    5: 9/24 (38%)
+    8: 11/24 (46%)
+   12: 0/24 (0%)
+   18: 0/24 (0%)
+   25: 0/24 (0%)
+
+=== bottle ===
+direction curve cells (delta: correct/directional):
+    1: 6/14 (43%)
+    2: 8/10 (80%)
+    3: 13/17 (76%)
+    5: 14/22 (64%)
+    8: 21/24 (88%)
+   12: 22/24 (92%)
+   18: 23/24 (96%)
+   25: 11/11 (100%)
+fit: alpha=6.37 beta=0.96 lapse=0.000
+JND (75% correct): 4.3 pulses
+JND bootstrap median 3.8, 95% CI [0.2, 7.3]
+hit-report curve (delta: on_target/total):
+    1: 4/24 (17%)
+    2: 14/24 (58%)
+    3: 7/24 (29%)
+    5: 1/24 (4%)
+    8: 0/24 (0%)
+   12: 0/24 (0%)
+   18: 0/24 (0%)
+   25: 0/12 (0%)

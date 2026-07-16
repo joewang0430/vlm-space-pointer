@@ -2,3 +2,5 @@ opencv-python
 pyserial
 openai
 python-dotenv
+scipy
+matplotlib

@@ -9,6 +9,9 @@ __pycache__/
 # Generated images/captures (not source, can be large)
 captures/
 
+# Paper-related files (drafts, notes, references -- not source code)
+paper/
+
 # Claude Code local-only settings
 .claude/settings.local.json
 
