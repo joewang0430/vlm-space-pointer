@@ -53,7 +53,19 @@ load_dotenv()
 # fit the bisection strategy uses: "bear" (large/plain), "folder"
 # (large/high-contrast), "bottle" (small/narrow).
 OBJECTS = [
-    # ("bear", "the polar bear plush toy", 331, "bear"),
+    # Scene 2, anchored night 2026-07-16 (user-eye, swing-and-return).
+    # Same 8 objects as scene 1, rearranged; curve classes unchanged.
+    # Scene 1 anchors (for the record): umbrella 343, bowl 326,
+    # calculator 317, tissuebox 306, slipper 295, bottle 288, bear 278,
+    # folder 267.
+    ("folder",    "the blue folder",          342, "folder"),
+    ("bear",      "the polar bear plush toy", 327, "bear"),
+    ("bottle",    "the black water bottle",   318, "bottle"),
+    ("tissuebox", "the tissue box",           307, "folder"),
+    ("bowl",      "the white bowl",           295, "bottle"),
+    ("calculator","the black calculator",     287, "bottle"),
+    ("slipper",   "the slipper",              280, "bear"),
+    ("umbrella",  "the black umbrella",       267, "folder"),
 ]
 
 STRATEGIES = ["open", "halving", "bisection"]
@@ -61,6 +73,18 @@ REPS = 8
 MAX_ITERATIONS = 16
 INITIAL_STEP = 15
 MIN_STEP = 3
+
+# Calibrated window whose dot positions are verified inside the camera
+# frame (docs/e2_precheck.md § 2 -- the bottle -25 lesson from E1).
+# Recomputed 2026-07-16 evening from the post-move 11-point sweep:
+# pixel [20, 620] (>=15px margin from both frame edges) maps to
+# pulse [261, 362]; rounded inward for safety.
+FRAME_PULSE_MIN = 262
+FRAME_PULSE_MAX = 360
+
+
+def clamp_frame(pulse: float) -> int:
+    return round(max(FRAME_PULSE_MIN, min(FRAME_PULSE_MAX, pulse)))
 
 CSV_FIELDS = [
     "timestamp", "scene", "object", "strategy", "rep",
@@ -98,6 +122,7 @@ def query_vlm(client, cap, arduino, target, img_path):
 
 
 def run_open(client, cap, arduino, target, pulse0, img_dir, tag):
+    pulse0 = clamp_frame(pulse0)
     send_command(arduino, str(pulse0))
     time.sleep(1)
     final_img = f"{img_dir}/{tag}_final.jpg"
@@ -109,12 +134,15 @@ def run_open(client, cap, arduino, target, pulse0, img_dir, tag):
 
 
 def run_halving(client, cap, arduino, target, pulse0, img_dir, tag):
-    pulse = pulse0
+    """Faithful reproduction of aim_verify_loop.py's logic, including the
+    retry-once-at-same-pulse on laser-not-visible (docs/e2_precheck.md § 3)."""
+    pulse = clamp_frame(pulse0)
     step = INITIAL_STEP
     last_dir = None
     history = []
     final_img = None
     stop = "max_iters"
+    invisible_retried = False
     send_command(arduino, str(pulse))
     time.sleep(1)
     for it in range(1, MAX_ITERATIONS + 1):
@@ -123,8 +151,12 @@ def run_halving(client, cap, arduino, target, pulse0, img_dir, tag):
         history.append({"pulse": pulse, "dir": r.get("target_direction"),
                         "on": r.get("on_target"), "vis": r.get("laser_visible")})
         if not r.get("laser_visible", False):
+            if not invisible_retried:
+                invisible_retried = True
+                continue
             stop = "invisible"
             break
+        invisible_retried = False
         if r.get("on_target", False) and r.get("confidence") != "low":
             stop = "on_target"
             break
@@ -135,14 +167,14 @@ def run_halving(client, cap, arduino, target, pulse0, img_dir, tag):
         if last_dir is not None and d != last_dir:
             step = max(MIN_STEP, step // 2)
         last_dir = d
-        pulse = clamp_pulse(pulse + (abs(step) if d == "left" else -abs(step)))
+        pulse = clamp_frame(pulse + (abs(step) if d == "left" else -abs(step)))
         send_command(arduino, str(pulse))
         time.sleep(1)
     return pulse, len(history), stop, history, final_img
 
 
 def run_bisection(client, cap, arduino, target, pulse0, curve_class, img_dir, tag):
-    pb = ProbabilisticBisection(curve_class)
+    pb = ProbabilisticBisection(curve_class, pulse_lo=FRAME_PULSE_MIN, pulse_hi=FRAME_PULSE_MAX)
     pb.warm_start(pulse0, sigma=6.0)
     history = []
     final_img = None
@@ -191,6 +223,22 @@ def main():
         print("OPENAI_API_KEY not set.")
         return
     client = OpenAI(api_key=api_key)
+
+    # Log the resolved model snapshot at batch start (checked again at the
+    # end) so any mid-run silent model update is visible and disclosable.
+    os.makedirs("results", exist_ok=True)
+    meta_path = f"results/e2_{scene}_meta.txt"
+
+    def log_model_version(when):
+        r = client.chat.completions.create(
+            model="gpt-4o", max_tokens=1,
+            messages=[{"role": "user", "content": "hi"}])
+        with open(meta_path, "a", encoding="utf-8") as mf:
+            mf.write(f"{datetime.now().isoformat(timespec='seconds')} "
+                     f"{when}: gpt-4o resolves to {r.model}\n")
+        print(f"model check ({when}): {r.model}")
+
+    log_model_version("batch start")
 
     img_dir = f"captures/e2/{scene}"
     os.makedirs(img_dir, exist_ok=True)
@@ -245,6 +293,7 @@ def main():
             print(f"[{i}/{len(cells)}] {tag}: err={err} iters={iters} stop={stop}")
 
     cap.release()
+    log_model_version("batch end")
     print(f"done -- {csv_path}")
 
 

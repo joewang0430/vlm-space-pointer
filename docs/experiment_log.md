@@ -185,7 +185,48 @@ whenever a decision is made or data lands.
   Do NOT fill the framework's "XX fewer queries" placeholder with a
   big number -- the evidence doesn't support it.
 
-## E2 — closed-loop comparison (designed, not yet built)
+## E2 scene 1 — setup complete (evening 07-16, run pending)
+- Rig deliberately relocated (more room from left wall); recalibration #4:
+  PULSE_PER_PIXEL=-0.16822, PULSE_AT_PIXEL_ZERO=365.05 (11 user-read
+  points, R^2=0.998, max resid 2.3; swept WITH objects in scene by design).
+  Frame window recomputed to pulse [262, 360] (updated in e2_closed_loop
+  and PB grid).
+- 8 targets anchored (user-eye, swing-and-return against servo deadband):
+  umbrella 343, bowl 326, calculator 317, tissue box 306, slipper 295,
+  black bottle 288, bear 278, folder 267 (folder = declared boundary case,
+  5 pulses above window floor).
+- Pre-declared amendments recorded in docs/e2_precheck.md § 5b (rig move,
+  folder boundary, servo deadband noise floor, curve-class assignments).
+- Command: `.venv/Scripts/python.exe e2_closed_loop.py scene1`
+  (192 trials, est. 4-6h; night lighting matched to E1).
+
+## E2 — FINAL RESULTS (both scenes complete, night 07-16 -> 07-17)
+- 383/384 valid trials (1 API failure, pre-declared exclusion). Model
+  snapshot gpt-4o-2024-08-06 at all four batch boundary checks.
+- Hit rates (geometric judgment from user-measured pulse-space extents,
+  touching=hit): open 27% (34/128), halving 67% (85/127), bisection
+  **77%** (99/128). Replicates across both layouts.
+- Terminal error: open median 9.0 / mean 8.95; halving 3.0 / 3.98;
+  bisection 3.0 / 3.23 -- identical closed-loop medians = the
+  comparator-limited floor (P1 confirmed); bisection's cleaner tail
+  converts to +10pp hit rate, biggest on narrow objects (bottle 75 vs
+  31%, calculator 88 vs 50%).
+- Folder anomaly persists in both scenes (bisection 4.0/9.0 vs halving
+  4.0/3.5): data-driven policy inherits its calibration data's quality
+  (folder's non-monotone hit curve). Umbrella scene-1 anomaly vanished
+  on rearrangement -> positional context, matches E1 side-asymmetry.
+- Blinded audit: 20/20 agreement between user's eye and geometric
+  judgment. Object extents: user-read from edge-sweep photos, both
+  scenes (values in fit scripts / make_figures_e2.py EDGES dict).
+- Umbrella s1 right edge -9 evidenced via bowl_off+08 photo; left edge
+  +10 interpolated between +9 (contact) and +12 (separated) photos.
+- Paper status (07-17 early morning): Fig.1 annotated apparatus
+  (user-approved), Fig.4 scene pair, Fig.5 E2 results all rendered;
+  Sections System/Theory/RelatedWork(24 refs verified)/E1/E2/Discussion
+  written; 6 pages compiling clean. Remaining: Intro, Abstract,
+  Conclusion, polish, user read-through.
+
+## E2 — closed-loop comparison (original design)
 - 8 objects × 2 scene layouts × 3 strategies × 8 reps = 384 trials.
 - Strategies: (a) open-loop coordinate regression (aim once via
   `pixel_to_angle.py`, no correction); (b) step-halving (current
